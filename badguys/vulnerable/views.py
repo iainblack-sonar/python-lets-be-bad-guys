@@ -1,8 +1,10 @@
 import base64
 import mimetypes
 import os
+import pickle
+import subprocess
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
@@ -68,14 +70,8 @@ def code_execution(request):
         first_name = request.POST.get('first_name', '')
 
         try:
-            # Try it the Python 3 way...
-            exec(base64.decodestring(bytes(first_name, 'ascii')))
-        except TypeError:
-            # Try it the Python 2 way...
-            try:
-                exec(base64.decodestring(first_name))
-            except:
-                pass
+            # Decode base64 and execute - VULNERABLE to code injection
+            exec(base64.b64decode(first_name))
         except:
             pass
 
@@ -87,6 +83,44 @@ def code_execution(request):
 
     return render(request, 'vulnerable/injection/code_execution.html',
             {'first_name': request.POST.get('first_name', ''), 'data': data})
+
+
+def command_injection(request):
+    """Vulnerable to OS command injection via shell=True."""
+    output = ''
+    hostname = request.POST.get('hostname', '')
+    
+    if request.method == 'POST' and hostname:
+        # VULNERABLE: User input passed directly to shell command
+        result = subprocess.Popen(
+            'ping -c 1 ' + hostname,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = result.communicate()
+        output = stdout.decode('utf-8', errors='replace') + stderr.decode('utf-8', errors='replace')
+    
+    return render(request, 'vulnerable/injection/command.html',
+            {'hostname': hostname, 'output': output})
+
+
+def insecure_deserialization(request):
+    """Vulnerable to insecure deserialization via pickle."""
+    result = ''
+    user_data = request.POST.get('data', '')
+    
+    if request.method == 'POST' and user_data:
+        try:
+            # VULNERABLE: Deserializing untrusted user input with pickle
+            decoded = base64.b64decode(user_data)
+            obj = pickle.loads(decoded)
+            result = str(obj)
+        except Exception as e:
+            result = f"Error: {str(e)}"
+    
+    return render(request, 'vulnerable/injection/deserialization.html',
+            {'user_data': user_data, 'result': result})
 
 
 ## 02 - Broken Authentication & Session Management

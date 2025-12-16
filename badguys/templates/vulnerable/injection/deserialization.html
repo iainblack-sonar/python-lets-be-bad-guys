@@ -1,0 +1,65 @@
+{% extends "exercise_base.html" %}
+
+{% block title %}{{ block.super }}Insecure Deserialization{% endblock %}
+
+{% block header %}
+    <h1>Insecure Deserialization</h1>
+{% endblock %}
+
+{% block content %}
+    <p>This page demonstrates an insecure deserialization vulnerability. The server
+    accepts base64-encoded pickle data and deserializes it without validation.
+    Pickle can execute arbitrary Python code during deserialization.</p>
+
+    <p>An attacker can craft a malicious pickle payload that executes code when
+    deserialized. This is extremely dangerous as it can lead to Remote Code
+    Execution (RCE).</p>
+
+    <fieldset>
+        <form method="POST">
+            <label for="data">Base64-encoded pickle data</label>
+            <input name="data" value="{{ user_data }}" placeholder="Enter base64 pickle data">
+            <input type="submit" value="Deserialize">
+        </form>
+    </fieldset>
+
+    {% if result %}
+        <div class="panel">
+            <h4>Deserialization Result:</h4>
+            <pre>{{ result }}</pre>
+        </div>
+    {% endif %}
+
+    <div class="hints panel">
+        <p>Understanding the vulnerability:</p>
+        <ul>
+            <li>Pickle is Python's serialization format - it can serialize any Python object</li>
+            <li>When deserializing, pickle can call <code>__reduce__</code> methods that execute code</li>
+            <li>Never unpickle data from untrusted sources</li>
+            <li>A safe test: <code>gASVCgAAAAAAAABdlChLAUsCSwNlLg==</code> (list [1, 2, 3])</li>
+        </ul>
+        <p>Example malicious payload structure (do not use on production systems):</p>
+        <pre>
+import pickle
+import base64
+import os
+
+class Exploit:
+    def __reduce__(self):
+        return (os.system, ('whoami',))
+
+payload = base64.b64encode(pickle.dumps(Exploit()))
+        </pre>
+    </div>
+{% endblock %}
+
+{% block extra_topnav %}
+<li><a href="{% url 'injection-command' %}">Prev</a></li>
+<li><a href="{% url 'broken-auth' %}">Next</a></li>
+{% endblock %}
+
+{% block extra_botnav %}
+<li><a href="{% url 'injection-command' %}">Prev</a></li>
+<li><a href="{% url 'broken-auth' %}">Next</a></li>
+{% endblock %}
+

@@ -1,4 +1,28 @@
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+__pycache__/
+
+# Logs
 *.log
 *.pot
-*.pyc
+
+# Local settings
 local_settings.py
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Database
+*.sqlite3
+db.sqlite3
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
