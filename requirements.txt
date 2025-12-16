@@ -11,3 +11,8 @@ cryptography==3.3.1    # CVE-2020-36242 - Bleichenbacher timing oracle
 paramiko==2.9.0        # CVE-2022-24302 - Race condition in key writing
 lxml==4.6.2            # CVE-2021-43818 - XSS via HTML/SVG
 numpy==1.21.0          # CVE-2021-41495 - Buffer overflow
+aiohttp==3.7.3         # CVE-2021-21330 - Open redirect vulnerability
+httpx==0.16.0          # CVE-2021-41945 - Timing attack on digest auth
+sqlparse==0.4.1        # CVE-2023-30608 - ReDoS vulnerability
+certifi==2022.5.18     # CVE-2022-23491 - Untrusted root certificates
+setuptools==57.0.0     # CVE-2022-40897 - ReDoS in package_index
