@@ -5,14 +5,3 @@ django-debug-toolbar==3.8.1
 PyYAML==5.3.1          # CVE-2020-14343 - Arbitrary code execution via yaml.load()
 requests==2.25.1       # CVE-2023-32681 - Leaking Proxy-Authorization headers
 Jinja2==2.11.2         # CVE-2020-28493 - ReDoS vulnerability
-urllib3==1.26.4        # CVE-2021-33503 - ReDoS when parsing URL authority
-Pillow==8.0.0          # Multiple CVEs - buffer overflow, DoS
-cryptography==3.3.1    # CVE-2020-36242 - Bleichenbacher timing oracle
-paramiko==2.9.0        # CVE-2022-24302 - Race condition in key writing
-lxml==4.6.2            # CVE-2021-43818 - XSS via HTML/SVG
-numpy==1.21.0          # CVE-2021-41495 - Buffer overflow
-aiohttp==3.7.3         # CVE-2021-21330 - Open redirect vulnerability
-httpx==0.16.0          # CVE-2021-41945 - Timing attack on digest auth
-sqlparse==0.4.1        # CVE-2023-30608 - ReDoS vulnerability
-certifi==2022.5.18     # CVE-2022-23491 - Untrusted root certificates
-setuptools==57.0.0     # CVE-2022-40897 - ReDoS in package_index
