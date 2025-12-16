@@ -226,3 +226,175 @@ def admin(request):
     return render(request, 'vulnerable/redirects/admin.html', {})
 
 
+## 11 - Code Quality Issues (Reliability & Maintainability)
+
+def process_user_data(request):
+    """Function with multiple reliability and maintainability issues."""
+    
+    # ISSUE: Unused variable (maintainability)
+    unused_config = {'timeout': 30, 'retries': 3}
+    
+    # ISSUE: Magic numbers (maintainability)
+    if len(request.GET.get('data', '')) > 256:
+        return HttpResponse('Data too long', status=400)
+    
+    # ISSUE: Resource leak - file handle never closed (reliability)
+    log_file = open('/tmp/app.log', 'a')
+    log_file.write('Processing request\n')
+    # Missing: log_file.close()
+    
+    result = None
+    data = request.GET.get('data', '')
+    
+    # ISSUE: Empty except block - swallowing all exceptions (reliability)
+    try:
+        result = int(data) * 2
+    except:
+        pass
+    
+    return HttpResponse(f'Result: {result}')
+
+
+def complex_validation(value, min_val, max_val, allow_none, allow_empty, 
+                       trim_whitespace, convert_type, default_value,
+                       error_message, strict_mode):
+    """ISSUE: Too many parameters (maintainability) - cognitive complexity."""
+    
+    # ISSUE: High cyclomatic complexity / deep nesting (maintainability)
+    if value is not None:
+        if not allow_none:
+            if isinstance(value, str):
+                if trim_whitespace:
+                    value = value.strip()
+                if not allow_empty:
+                    if len(value) == 0:
+                        if strict_mode:
+                            raise ValueError(error_message)
+                        else:
+                            return default_value
+                if convert_type:
+                    try:
+                        value = int(value)
+                        if value < min_val:
+                            if strict_mode:
+                                raise ValueError(error_message)
+                            return min_val
+                        if value > max_val:
+                            if strict_mode:
+                                raise ValueError(error_message)
+                            return max_val
+                    except ValueError:
+                        return default_value
+    else:
+        if not allow_none:
+            return default_value
+    return value
+
+
+def calculate_discount(price, user_type):
+    """ISSUE: Duplicated code blocks (maintainability)."""
+    
+    # Duplicated logic block 1
+    if user_type == 'premium':
+        discount = price * 0.20
+        final_price = price - discount
+        tax = final_price * 0.08
+        total = final_price + tax
+        savings = discount
+        message = f'Premium discount applied: ${discount:.2f}'
+        return {'total': total, 'savings': savings, 'message': message}
+    
+    # Duplicated logic block 2 (copy-paste with minor changes)
+    if user_type == 'gold':
+        discount = price * 0.15
+        final_price = price - discount
+        tax = final_price * 0.08
+        total = final_price + tax
+        savings = discount
+        message = f'Gold discount applied: ${discount:.2f}'
+        return {'total': total, 'savings': savings, 'message': message}
+    
+    # Duplicated logic block 3 (copy-paste with minor changes)
+    if user_type == 'silver':
+        discount = price * 0.10
+        final_price = price - discount
+        tax = final_price * 0.08
+        total = final_price + tax
+        savings = discount
+        message = f'Silver discount applied: ${discount:.2f}'
+        return {'total': total, 'savings': savings, 'message': message}
+    
+    # Default case
+    discount = 0
+    final_price = price
+    tax = final_price * 0.08
+    total = final_price + tax
+    return {'total': total, 'savings': 0, 'message': 'No discount'}
+
+
+def unreachable_code_example(request):
+    """ISSUE: Dead/unreachable code after return (reliability)."""
+    data = request.GET.get('action')
+    
+    if data == 'process':
+        return HttpResponse('Processed')
+    else:
+        return HttpResponse('Skipped')
+    
+    # ISSUE: Unreachable code - this will never execute
+    cleanup_result = perform_cleanup()
+    log_action('completed')
+    return HttpResponse('Done')
+
+
+def perform_cleanup():
+    """Helper function that's called from unreachable code."""
+    return True
+
+
+def log_action(action):
+    """Helper function that's called from unreachable code."""
+    pass
+
+
+def identical_branches(request):
+    """ISSUE: Identical code in if/else branches (maintainability)."""
+    status = request.GET.get('status')
+    
+    if status == 'active':
+        result = {'status': 'ok', 'code': 200}
+        message = 'Operation successful'
+        return HttpResponse(f'{result} - {message}')
+    else:
+        # ISSUE: This branch is identical to the if branch
+        result = {'status': 'ok', 'code': 200}
+        message = 'Operation successful'
+        return HttpResponse(f'{result} - {message}')
+
+
+def process_order(request):
+    """ISSUE: Commented-out code blocks (maintainability)."""
+    order_id = request.GET.get('order_id')
+    
+    # ISSUE: Large blocks of commented-out code should be removed
+    # def old_process_logic(order):
+    #     if order.status == 'pending':
+    #         order.status = 'processing'
+    #         order.save()
+    #         send_notification(order.user, 'Order processing')
+    #         log_order_change(order, 'pending', 'processing')
+    #         return True
+    #     elif order.status == 'processing':
+    #         order.status = 'shipped'
+    #         order.save()
+    #         send_notification(order.user, 'Order shipped')
+    #         log_order_change(order, 'processing', 'shipped')
+    #         return True
+    #     return False
+    
+    # TODO: refactor this later
+    # FIXME: this is broken
+    # HACK: temporary workaround
+    
+    return HttpResponse(f'Order {order_id} processed')
+
