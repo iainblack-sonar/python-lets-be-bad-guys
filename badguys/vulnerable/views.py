@@ -1,13 +1,27 @@
 import base64
+import hashlib
 import mimetypes
 import os
 import pickle
+import random
+import re
 import subprocess
+import tempfile
+import urllib.request
 
 from django.urls import reverse
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
+
+# SECURITY ISSUE: Hardcoded credentials (CWE-798)
+DATABASE_PASSWORD = "admin123!"
+API_SECRET_KEY = "sk_live_4eC39HqLyjWDarjtT1zdp7dc"
+AWS_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"
+AWS_SECRET_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+PRIVATE_KEY = """-----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF8PbnGy0AHB7MfszCzWx
+-----END RSA PRIVATE KEY-----"""
 
 
 ## 01 - Injection Attacks
@@ -397,4 +411,246 @@ def process_order(request):
     # HACK: temporary workaround
     
     return HttpResponse(f'Order {order_id} processed')
+
+
+## 12 - Additional Security Vulnerabilities
+
+def ssrf_vulnerability(request):
+    """SECURITY: Server-Side Request Forgery (SSRF) - CWE-918."""
+    url = request.GET.get('url', '')
+    content = ''
+    
+    if url:
+        # VULNERABLE: Fetching arbitrary URLs provided by user
+        # Can be used to access internal services, cloud metadata, etc.
+        try:
+            response = urllib.request.urlopen(url)
+            content = response.read().decode('utf-8', errors='replace')[:1000]
+        except Exception as e:
+            content = f"Error: {str(e)}"
+    
+    return HttpResponse(f'<pre>{content}</pre>')
+
+
+def weak_crypto_hash(request):
+    """SECURITY: Use of weak cryptographic hash (CWE-328)."""
+    password = request.POST.get('password', '')
+    
+    if password:
+        # VULNERABLE: MD5 is cryptographically broken for password hashing
+        hashed = hashlib.md5(password.encode()).hexdigest()
+        
+        # VULNERABLE: SHA1 is also weak for password hashing
+        sha1_hash = hashlib.sha1(password.encode()).hexdigest()
+        
+        return HttpResponse(f'MD5: {hashed}, SHA1: {sha1_hash}')
+    
+    return HttpResponse('No password provided')
+
+
+def insecure_random(request):
+    """SECURITY: Use of insecure random for security purposes (CWE-330)."""
+    
+    # VULNERABLE: random module is not cryptographically secure
+    # Should use secrets module for security-sensitive operations
+    token = ''.join([str(random.randint(0, 9)) for _ in range(16)])
+    session_id = random.getrandbits(128)
+    reset_code = random.randrange(100000, 999999)
+    
+    return HttpResponse(f'Token: {token}, Session: {session_id}, Reset: {reset_code}')
+
+
+def regex_dos(request):
+    """SECURITY: Regular Expression Denial of Service (ReDoS) - CWE-1333."""
+    user_input = request.GET.get('input', '')
+    
+    # VULNERABLE: Catastrophic backtracking pattern
+    # Input like "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!" causes exponential time
+    evil_pattern = re.compile(r'^(a+)+$')
+    
+    if evil_pattern.match(user_input):
+        return HttpResponse('Matched!')
+    return HttpResponse('No match')
+
+
+def path_traversal_write(request):
+    """SECURITY: Path Traversal vulnerability in file write (CWE-22)."""
+    filename = request.POST.get('filename', 'output.txt')
+    content = request.POST.get('content', '')
+    
+    # VULNERABLE: User-controlled filename without sanitization
+    # Attacker can write to arbitrary locations: ../../../etc/cron.d/evil
+    filepath = os.path.join('/tmp/uploads', filename)
+    
+    with open(filepath, 'w') as f:
+        f.write(content)
+    
+    return HttpResponse(f'Written to {filepath}')
+
+
+def xml_external_entity(request):
+    """SECURITY: XML External Entity (XXE) injection - CWE-611."""
+    from xml.etree import ElementTree as ET
+    
+    xml_data = request.POST.get('xml', '')
+    result = ''
+    
+    if xml_data:
+        # VULNERABLE: Parsing XML without disabling external entities
+        # Attacker can read local files: <!ENTITY xxe SYSTEM "file:///etc/passwd">
+        try:
+            tree = ET.fromstring(xml_data)
+            result = ET.tostring(tree, encoding='unicode')
+        except Exception as e:
+            result = f"Parse error: {str(e)}"
+    
+    return HttpResponse(f'<pre>{result}</pre>')
+
+
+def insecure_temp_file(request):
+    """SECURITY: Insecure temporary file creation (CWE-377)."""
+    data = request.POST.get('data', '')
+    
+    # VULNERABLE: Predictable temp file name, race condition possible
+    tmp_path = '/tmp/myapp_' + str(os.getpid()) + '.tmp'
+    
+    with open(tmp_path, 'w') as f:
+        f.write(data)
+    
+    # Read it back
+    with open(tmp_path, 'r') as f:
+        content = f.read()
+    
+    return HttpResponse(f'Stored: {content}')
+
+
+def sql_injection_raw(request):
+    """SECURITY: SQL Injection via string formatting (CWE-89)."""
+    from django.db import connection
+    
+    username = request.GET.get('username', '')
+    
+    # VULNERABLE: Direct string interpolation in SQL query
+    # Attacker input: ' OR '1'='1' --
+    query = f"SELECT * FROM auth_user WHERE username = '{username}'"
+    
+    with connection.cursor() as cursor:
+        try:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            return HttpResponse(f'Found {len(rows)} users')
+        except Exception as e:
+            return HttpResponse(f'Error: {str(e)}')
+
+
+def log_injection(request):
+    """SECURITY: Log injection vulnerability (CWE-117)."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    username = request.GET.get('username', '')
+    
+    # VULNERABLE: User input written directly to logs without sanitization
+    # Attacker can inject fake log entries: "admin\n[INFO] User admin logged in successfully"
+    logger.info(f"Login attempt for user: {username}")
+    
+    return HttpResponse('Login attempt logged')
+
+
+def eval_vulnerability(request):
+    """SECURITY: Code injection via eval() - CWE-95."""
+    expression = request.GET.get('expr', '1+1')
+    
+    # VULNERABLE: eval() on user input allows arbitrary code execution
+    # Attacker input: __import__('os').system('rm -rf /')
+    try:
+        result = eval(expression)
+        return HttpResponse(f'Result: {result}')
+    except Exception as e:
+        return HttpResponse(f'Error: {str(e)}')
+
+
+## 13 - More Code Quality Issues
+
+def function_with_bugs(request, data=[], config={}):
+    """Multiple code quality issues in one function."""
+    
+    # ISSUE: Mutable default argument (common Python bug)
+    data.append(request.GET.get('item', 'default'))
+    config['last_access'] = 'now'
+    
+    # ISSUE: Comparison to None using == instead of is
+    value = request.GET.get('value')
+    if value == None:
+        value = 'default'
+    
+    # ISSUE: Comparison to True/False using == instead of is
+    flag = request.GET.get('flag')
+    if flag == True:
+        pass
+    
+    # ISSUE: Using type() instead of isinstance()
+    if type(value) == str:
+        value = value.upper()
+    
+    # ISSUE: Bare except clause
+    try:
+        result = int(value)
+    except:
+        result = 0
+    
+    return HttpResponse(f'Data: {data}, Result: {result}')
+
+
+def too_many_returns(request):
+    """ISSUE: Too many return statements (cognitive complexity)."""
+    action = request.GET.get('action', '')
+    
+    if action == 'a':
+        return HttpResponse('Action A')
+    if action == 'b':
+        return HttpResponse('Action B')
+    if action == 'c':
+        return HttpResponse('Action C')
+    if action == 'd':
+        return HttpResponse('Action D')
+    if action == 'e':
+        return HttpResponse('Action E')
+    if action == 'f':
+        return HttpResponse('Action F')
+    if action == 'g':
+        return HttpResponse('Action G')
+    if action == 'h':
+        return HttpResponse('Action H')
+    return HttpResponse('Unknown action')
+
+
+def unused_variables_example(request):
+    """ISSUE: Multiple unused variables."""
+    unused_a = 'this is never used'
+    unused_b = 42
+    unused_c = ['list', 'never', 'used']
+    unused_d = {'dict': 'also unused'}
+    
+    used_value = request.GET.get('value', 'default')
+    return HttpResponse(f'Value: {used_value}')
+
+
+def string_concat_in_loop(request):
+    """ISSUE: Inefficient string concatenation in loop."""
+    result = ''
+    
+    # ISSUE: String concatenation in loop is O(n²)
+    for i in range(100):
+        result = result + f'Item {i}, '
+    
+    return HttpResponse(result)
+
+
+def global_variable_mutation():
+    """ISSUE: Modifying global state."""
+    global DATABASE_PASSWORD
+    # ISSUE: Mutating global variables is bad practice
+    DATABASE_PASSWORD = "new_password_123"
+    return DATABASE_PASSWORD
 

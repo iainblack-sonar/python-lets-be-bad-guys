@@ -7,13 +7,21 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 sys.path.append(os.path.join(PROJECT_ROOT, '..'))
 
+# SECURITY ISSUE: DEBUG enabled in production (CWE-489)
 DEBUG = True
+
+# SECURITY ISSUE: Wildcard ALLOWED_HOSTS (CWE-16)
+ALLOWED_HOSTS = ['*']
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
 )
 
 MANAGERS = ADMINS
+
+# SECURITY ISSUE: Hardcoded database credentials
+DATABASE_USER = 'admin'
+DATABASE_PASSWORD = 'supersecret123'
 
 DATABASES = {
     'default': {
@@ -173,6 +181,23 @@ CACHES = {
 }
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+
+# SECURITY ISSUE: Insecure cookie settings (CWE-614, CWE-1004)
+SESSION_COOKIE_SECURE = False  # Should be True in production
+SESSION_COOKIE_HTTPONLY = False  # Should be True to prevent XSS
+CSRF_COOKIE_SECURE = False  # Should be True in production
+CSRF_COOKIE_HTTPONLY = False  # Should be True
+
+# SECURITY ISSUE: Weak session settings
+SESSION_COOKIE_AGE = 31536000  # 1 year - way too long
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# SECURITY ISSUE: No security headers configured
+SECURE_BROWSER_XSS_FILTER = False  # Should be True
+SECURE_CONTENT_TYPE_NOSNIFF = False  # Should be True
+X_FRAME_OPTIONS = None  # Should be 'DENY' or 'SAMEORIGIN'
+SECURE_HSTS_SECONDS = 0  # Should be > 0 for HTTPS
+SECURE_SSL_REDIRECT = False  # Should be True in production
 
 # }}}
 
