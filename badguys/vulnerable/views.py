@@ -372,3 +372,29 @@ def identical_branches(request):
         return HttpResponse(f'{result} - {message}')
 
 
+def process_order(request):
+    """ISSUE: Commented-out code blocks (maintainability)."""
+    order_id = request.GET.get('order_id')
+    
+    # ISSUE: Large blocks of commented-out code should be removed
+    # def old_process_logic(order):
+    #     if order.status == 'pending':
+    #         order.status = 'processing'
+    #         order.save()
+    #         send_notification(order.user, 'Order processing')
+    #         log_order_change(order, 'pending', 'processing')
+    #         return True
+    #     elif order.status == 'processing':
+    #         order.status = 'shipped'
+    #         order.save()
+    #         send_notification(order.user, 'Order shipped')
+    #         log_order_change(order, 'processing', 'shipped')
+    #         return True
+    #     return False
+    
+    # TODO: refactor this later
+    # FIXME: this is broken
+    # HACK: temporary workaround
+    
+    return HttpResponse(f'Order {order_id} processed')
+
