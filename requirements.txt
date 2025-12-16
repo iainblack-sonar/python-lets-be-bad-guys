@@ -1,2 +1,9 @@
 Django==3.2.25
 django-debug-toolbar==3.8.1
+
+# Dependencies with known vulnerabilities (for security scanning demonstration)
+PyYAML==5.3.1          # CVE-2020-14343 - Arbitrary code execution via yaml.load()
+requests==2.25.1       # CVE-2023-32681 - Leaking Proxy-Authorization headers
+Jinja2==2.11.2         # CVE-2020-28493 - ReDoS vulnerability
+urllib3==1.26.4        # CVE-2021-33503 - ReDoS when parsing URL authority
+Pillow==8.0.0          # Multiple CVEs - buffer overflow, DoS
