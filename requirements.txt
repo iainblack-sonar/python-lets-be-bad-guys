@@ -7,3 +7,8 @@ requests==2.25.1       # CVE-2023-32681 - Leaking Proxy-Authorization headers
 Jinja2==2.11.2         # CVE-2020-28493 - ReDoS vulnerability
 urllib3==1.26.4        # CVE-2021-33503 - ReDoS when parsing URL authority
 Pillow==8.0.0          # Multiple CVEs - buffer overflow, DoS
+cryptography==3.3.1    # CVE-2020-36242 - Bleichenbacher timing oracle
+paramiko==2.9.0        # CVE-2022-24302 - Race condition in key writing
+lxml==4.6.2            # CVE-2021-43818 - XSS via HTML/SVG
+Flask==2.0.0           # CVE-2023-30861 - Session cookie exposure
+Werkzeug==2.0.0        # CVE-2023-23934 - Cookie parsing vulnerability
